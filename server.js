@@ -1,5 +1,6 @@
 const express = require("express");
 const userRouter = require("./routes/userRoutes");
+const shortUrl = require("./routes/shortUrlRoutes");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const app = express();
@@ -34,4 +35,5 @@ app.listen(PORT, () => {
   console.log(`App is running on PORT ${PORT}`);
 });
 
-app.use("/api", userRouter);
+app.use("/api/user", userRouter);
+app.use("/api/url", shortUrl);

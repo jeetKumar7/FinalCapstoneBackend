@@ -16,7 +16,7 @@ Router.post("/signup", async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       const newUser = new User({ email, password: hashedPassword, name, mobile });
       await newUser.save();
-      const token = jwt.sign({ name }, process.env.JWT_SECRET);
+      const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
       res.status(200).json({ message: "User Created SUccesfully!", token, id: newUser._id });
     }
   } catch (error) {
@@ -38,7 +38,7 @@ Router.post("/signin", async (req, res) => {
       res.status(400).json({ message: "Invalid Credentials" });
       return;
     }
-    const token = jwt.sign({ email }, process.env.JWT_SECRET);
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
     res.status(200).json({ message: "Signin Succesfull", token, id: user._id });
   } catch (error) {
     console.log(error);

@@ -1,5 +1,6 @@
 const express = require("express");
 const userRouter = require("./routes/userRoutes");
+const dashboardRouter = require("./routes/dashboardRoutes.js");
 const shortUrl = require("./routes/shortUrlRoutes");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -37,3 +38,4 @@ app.listen(PORT, () => {
 
 app.use("/api/user", userRouter);
 app.use("/api/url", shortUrl);
+app.use("/dashboard", dashboardRouter);

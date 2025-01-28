@@ -52,6 +52,18 @@ Router.get("/:shortId", async (req, res) => {
     if (!shortUrl) {
       return res.status(404).json({ message: "Short URL not found" });
     }
+    if (shortUrl.expirationTime && new Date() > shortUrl.expirationTime) {
+      return res.status(410).json({ message: "Short URL has expired" });
+    }
+
+    // await Click.create({
+    //   url: shortUrl._id,
+    //   ip: req.ip,
+    //   userAgent: req.headers["user-agent"],
+    // });
+
+    shortUrl.clicks += 1;
+    await shortUrl.save();
 
     // Redirect to the original destination URL
     return res.redirect(shortUrl.destinationUrl);

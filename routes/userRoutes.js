@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Router = require("express").Router();
 const dotenv = require("dotenv");
+const { isLoggedIn } = require("../middleware/auth.js");
 
 dotenv.config();
 
@@ -43,6 +44,30 @@ Router.post("/signin", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Server Error" });
+  }
+});
+
+Router.put("/edit", isLoggedIn, async (req, res) => {
+  const { name, email, mobile } = req.body;
+  const userId = req.user.id;
+  // console.log(userId);
+  try {
+    const updatedUser = await User.findByIdAndUpdate(userId, { name, email, mobile }, { new: true });
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
+  }
+});
+
+Router.delete("/delete", isLoggedIn, async (req, res) => {
+  const userId = req.user.id;
+  console.log(userId);
+  try {
+    await User.findByIdAndDelete(userId);
+    await User.deleteMany({ user: userId });
+    res.status(200).json({ message: "Account deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
   }
 });
 

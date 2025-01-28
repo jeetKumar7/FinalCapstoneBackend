@@ -29,6 +29,9 @@ const shortUrlSchema = new mongoose.Schema(
       required: true,
       unique: true, // Ensure the hash is unique
     },
+    clicks: {
+      type: Number,
+    },
   },
   {
     timestamps: true,

@@ -1,15 +1,19 @@
 const URL = require("../schemas/shortUrlSchema.js");
+const Analytics = require("../schemas/analyticsSchema.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Router = require("express").Router();
 const dotenv = require("dotenv");
 const { isLoggedIn } = require("../middleware/auth.js");
+const device = require("express-device");
 
 dotenv.config();
 
 const generateHash = (url) => {
   return bcrypt.hashSync(url, 10); // Generates hash of the destination URL
 };
+
+Router.use(device.capture());
 
 Router.get("/edit/:shortId", isLoggedIn, async (req, res) => {
   const { shortId } = req.params;
@@ -121,6 +125,15 @@ Router.get("/:shortId", async (req, res) => {
 
     shortUrl.clicks += 1;
     await shortUrl.save();
+
+    const analyticsData = new Analytics({
+      destinationUrl: shortUrl.destinationUrl,
+      shortUrl: shortUrl.hash,
+      ipAddress: req.ip,
+      device: req.device.type,
+      user: shortUrl.user,
+    });
+    await analyticsData.save();
 
     // await Click.create({
     //   url: shortUrl._id,

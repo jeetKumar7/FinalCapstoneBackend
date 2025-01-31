@@ -6,6 +6,7 @@ const analyticsSchema = new mongoose.Schema({
   shortUrl: { type: String, required: true },
   ipAddress: { type: String, required: true },
   device: { type: String, required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 });
 
 module.exports = mongoose.model("Analytics", analyticsSchema);

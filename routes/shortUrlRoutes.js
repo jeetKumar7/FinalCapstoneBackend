@@ -11,9 +11,51 @@ const generateHash = (url) => {
   return bcrypt.hashSync(url, 10); // Generates hash of the destination URL
 };
 
+Router.get("/edit/:shortId", isLoggedIn, async (req, res) => {
+  const { shortId } = req.params;
+  try {
+    const shortUrl = await URL.findOne({ hash: shortId });
+    if (!shortUrl) {
+      return res.status(404).json({ message: "Short URL not found" });
+    }
+    if (shortUrl.user != req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    res.status(200).json(shortUrl);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
+  }
+});
+
+Router.post("/edit/:shortId", isLoggedIn, async (req, res) => {
+  const { shortId } = req.params;
+  const { destinationUrl, remarks, expirationTime } = req.body;
+  try {
+    const shortUrl = await URL.findOne({ hash: shortId });
+    if (!shortUrl) {
+      return res.status(404).json({ message: "Short URL not found" });
+    }
+    if (shortUrl.user != req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    if (destinationUrl) {
+      shortUrl.destinationUrl = destinationUrl;
+    }
+    if (remarks) {
+      shortUrl.remarks = remarks;
+    }
+    if (expirationTime) {
+      shortUrl.expirationTime = expirationTime;
+    }
+    await shortUrl.save();
+    res.status(200).json({ message: "URL Updated Successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error", error });
+  }
+});
+
 Router.post("/shorten", isLoggedIn, async (req, res) => {
   const { destinationUrl, remarks, expirationTime } = req.body;
-  const userId = req.user.id;
   try {
     // Hash the destination URL using bcrypt and truncate the hash
     const urlHash = generateHash(destinationUrl); // Truncated to 8 chars
@@ -26,6 +68,7 @@ Router.post("/shorten", isLoggedIn, async (req, res) => {
       remarks: remarks || "",
       expirationTime: expirationTime || null,
       hash: shortUrlId,
+      clicks: 0,
     });
 
     await newShortUrl.save();
@@ -56,14 +99,17 @@ Router.get("/:shortId", async (req, res) => {
       return res.status(410).json({ message: "Short URL has expired" });
     }
 
+    shortUrl.clicks += 1;
+    await shortUrl.save();
+
     // await Click.create({
     //   url: shortUrl._id,
     //   ip: req.ip,
     //   userAgent: req.headers["user-agent"],
     // });
 
-    shortUrl.clicks += 1;
-    await shortUrl.save();
+    // shortUrl.clicks += 1;
+    // await shortUrl.save();
 
     // Redirect to the original destination URL
     return res.redirect(shortUrl.destinationUrl);

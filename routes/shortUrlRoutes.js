@@ -27,6 +27,26 @@ Router.get("/edit/:shortId", isLoggedIn, async (req, res) => {
   }
 });
 
+Router.delete("/delete/:shortId", isLoggedIn, async (req, res) => {
+  const { shortId } = req.params;
+  try {
+    console.log("ShortId:", shortId);
+    const shortUrl = await URL.findOne({ hash: shortId });
+    console.log("Short URL found:", shortUrl);
+    if (!shortUrl) {
+      return res.status(404).json({ message: "Short URL not found" });
+    }
+    if (shortUrl.user != req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    await shortUrl.deleteOne({ hash: shortId });
+
+    res.status(200).json({ message: "URL Deleted Successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server Error in Backend", error });
+  }
+});
+
 Router.post("/edit/:shortId", isLoggedIn, async (req, res) => {
   const { shortId } = req.params;
   const { destinationUrl, remarks, expirationTime } = req.body;

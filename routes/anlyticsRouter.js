@@ -25,50 +25,60 @@ Router.get("/getAnalytics", isLoggedIn, async (req, res) => {
 Router.get("/totalClicks", isLoggedIn, async (req, res) => {
   console.log("Total Clicks in Router Backend");
   try {
-    const totalClicks = await Analytics.countDocuments();
+    const userId = req.user.id;
+    const totalClicks = await Analytics.countDocuments({ user: userId });
     console.log("Total Clicks:", totalClicks);
     res.status(200).json({ totalClicks });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error });
+    res.status(500).json({ message: "Failed to fetch total clicks", error });
   }
 });
 
 Router.get("/dateWiseClicks", isLoggedIn, async (req, res) => {
   try {
+    const userId = req.user.id; // Convert to ObjectId if needed
+    console.log("Inside date-wise click backend try block, User ID:", userId);
+
     const dateWiseClicks = await Analytics.aggregate([
+      // Correctly placed $match stage
       {
         $group: {
           _id: {
-            year: { $year: "$timestamp" },
-            month: { $month: "$timestamp" },
-            day: { $dayOfMonth: "$timestamp" },
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$timestamp",
+              timezone: "UTC", // Change to your preferred timezone
+            },
           },
-          count: { $sum: 1 },
+          clicks: { $sum: 1 },
         },
       },
-      { $sort: { "_id.year": -1, "_id.month": -1, "_id.day": -1 } },
-      { $limit: 4 },
-      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }, // Sort back to ascending order
+      { $sort: { _id: 1 } },
     ]);
+
     res.status(200).json(dateWiseClicks);
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error });
+    console.error("Error in dateWiseClicks:", error);
+    res.status(500).json({ message: "Failed to fetch date-wise clicks", error });
   }
 });
 
 Router.get("/deviceWiseClicks", isLoggedIn, async (req, res) => {
   try {
+    const userId = req.user.id;
+    console.log(" Inside device wise click backend try block ,User ID:", userId);
     const deviceWiseClicks = await Analytics.aggregate([
       {
         $group: {
           _id: "$device",
-          count: { $sum: 1 },
+          clicks: { $sum: 1 },
         },
       },
+      { $sort: { clicks: -1 } },
     ]);
     res.status(200).json(deviceWiseClicks);
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error });
+    res.status(500).json({ message: "Failed to fetch device wise clicks", error });
   }
 });
 

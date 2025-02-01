@@ -6,6 +6,7 @@ const Router = require("express").Router();
 const dotenv = require("dotenv");
 const { isLoggedIn } = require("../middleware/auth.js");
 const device = require("express-device");
+const requestIp = require("request-ip");
 
 dotenv.config();
 
@@ -126,10 +127,12 @@ Router.get("/:shortId", async (req, res) => {
     shortUrl.clicks += 1;
     await shortUrl.save();
 
+    const ipAddress = requestIp.getClientIp(req);
+
     const analyticsData = new Analytics({
       destinationUrl: shortUrl.destinationUrl,
       shortUrl: shortUrl.hash,
-      ipAddress: req.ip,
+      ipAddress: ipAddress,
       device: req.device.type,
       user: shortUrl.user,
     });

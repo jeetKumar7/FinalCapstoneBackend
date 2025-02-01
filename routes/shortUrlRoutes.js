@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const { isLoggedIn } = require("../middleware/auth.js");
 const device = require("express-device");
 const requestIp = require("request-ip");
+const useragent = require("useragent");
 
 dotenv.config();
 
@@ -108,15 +109,19 @@ Router.post("/shorten", isLoggedIn, async (req, res) => {
   }
 });
 
+const getDeviceType = (userAgent) => {
+  if (/mobile/i.test(userAgent)) return "phone";
+  if (/tablet/i.test(userAgent)) return "tablet";
+  if (/bot|crawler|spider|crawling/i.test(userAgent)) return "bot";
+  return "desktop";
+};
+
 Router.get("/:shortId", async (req, res) => {
   const { shortId } = req.params; // Get the hashed part of the URL from the route
   console.log("ShortId received:", shortId);
   try {
-    // Find the original URL using the hashed value (truncated hash from the database)
     const shortUrl = await URL.findOne({ hash: shortId });
     console.log("Short URL found:", shortUrl);
-
-    // If the URL is not found in the database
     if (!shortUrl) {
       return res.status(404).json({ message: "Short URL not found" });
     }
@@ -127,25 +132,19 @@ Router.get("/:shortId", async (req, res) => {
     shortUrl.clicks += 1;
     await shortUrl.save();
 
+    const userAgent = req.headers["user-agent"];
     const ipAddress = requestIp.getClientIp(req);
+    const deviceType = getDeviceType(userAgent);
 
     const analyticsData = new Analytics({
       destinationUrl: shortUrl.destinationUrl,
       shortUrl: shortUrl.hash,
       ipAddress: ipAddress,
-      device: req.device.type,
+      device: deviceType,
       user: shortUrl.user,
     });
     await analyticsData.save();
-
-    // await Click.create({
-    //   url: shortUrl._id,
-    //   ip: req.ip,
-    //   userAgent: req.headers["user-agent"],
-    // });
-
-    // shortUrl.clicks += 1;
-    // await shortUrl.save();
+    console.log("Analytics data saved:", analyticsData);
 
     // Redirect to the original destination URL
     return res.redirect(shortUrl.destinationUrl);
